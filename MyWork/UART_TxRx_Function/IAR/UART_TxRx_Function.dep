@@ -5,85 +5,112 @@
     <configuration>
         <name>Release</name>
         <outputs>
-            <file>$TOOLKIT_DIR$\inc\c\DLib_Defaults.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\fmc.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\gpio.c</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\clk.c</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\retarget.c</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\sys.c</file>
-            <file>$PROJ_DIR$\..\main.c</file>
-            <file>$TOOLKIT_DIR$\inc\c\DLib_Product.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\system_Nano103.c</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\uart.c</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\uart.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\wwdt.h</file>
-            <file>$PROJ_DIR$\Release\Exe\UART_TxRx_Function.bin</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\scuart.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</file>
-            <file>$PROJ_DIR$\Release\Obj\sys.o</file>
-            <file>$PROJ_DIR$\Release\Obj\main.o</file>
-            <file>$TOOLKIT_DIR$\config\generic_cortex.icf</file>
-            <file>$PROJ_DIR$\Release\Obj\UART_TxRx_Function.pbd</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\pwm.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\sys.h</file>
-            <file>$PROJ_DIR$\Release\Obj\sys.pbi</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\sc.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\spi.h</file>
-            <file>$PROJ_DIR$\Release\Obj\main.__cstat.et</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\wdt.h</file>
-            <file>$PROJ_DIR$\Release\Obj\retarget.o</file>
-            <file>$TOOLKIT_DIR$\lib\dl6M_tlf.a</file>
-            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Include\system_Nano103.h</file>
-            <file>$PROJ_DIR$\Release\Obj\system_Nano103.o</file>
-            <file>$TOOLKIT_DIR$\lib\m6M_tl.a</file>
             <file>$PROJ_DIR$\Release\Obj\clk.pbi</file>
-            <file>$PROJ_DIR$\Release\Obj\startup_Nano103.o</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\gpio.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\adc.h</file>
             <file>$PROJ_DIR$\Release\Obj\clk.o</file>
-            <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
-            <file>$PROJ_DIR$\..\..\..\Library\CMSIS\Include\core_cm0.h</file>
-            <file>$PROJ_DIR$\Release\Obj\system_Nano103.pbi</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\acmp.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\adc.h</file>
             <file>$PROJ_DIR$\Release\Obj\main.pbi</file>
             <file>$TOOLKIT_DIR$\inc\c\stdint.h</file>
-            <file>$PROJ_DIR$\Release\Obj\gpio.o</file>
+            <file>$PROJ_DIR$\Release\Obj\system_Nano103.pbi</file>
             <file>$PROJ_DIR$\Release\Obj\system_Nano103.__cstat.et</file>
             <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\timer.h</file>
+            <file>$PROJ_DIR$\Release\Obj\startup_Nano103.o</file>
             <file>$PROJ_DIR$\Release\Obj\uart.o</file>
             <file>$TOOLKIT_DIR$\inc\c\yvals.h</file>
             <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Include\Nano103.h</file>
-            <file>$PROJ_DIR$\Release\Obj\uart.__cstat.et</file>
-            <file>$PROJ_DIR$\..\..\..\Library\CMSIS\Include\core_cmInstr.h</file>
-            <file>$TOOLKIT_DIR$\lib\rt6M_tl.a</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\clk.h</file>
+            <file>$PROJ_DIR$\Release\Obj\sys.pbi</file>
+            <file>$PROJ_DIR$\Release\Obj\gpio.o</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\acmp.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\pwm.h</file>
+            <file>$PROJ_DIR$\Release\Obj\main.o</file>
+            <file>$PROJ_DIR$\Release\Obj\main.__cstat.et</file>
+            <file>$PROJ_DIR$\Release\Obj\UART_TxRx_Function.pbd</file>
+            <file>$TOOLKIT_DIR$\lib\m6M_tl.a</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\wdt.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\CMSIS\Include\core_cm0.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\sys.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\sc.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\spi.h</file>
+            <file>$TOOLKIT_DIR$\lib\dl6M_tlf.a</file>
+            <file>$TOOLKIT_DIR$\config\generic_cortex.icf</file>
+            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Include\system_Nano103.h</file>
+            <file>$PROJ_DIR$\Release\Obj\system_Nano103.o</file>
+            <file>$PROJ_DIR$\Release\Obj\retarget.o</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\gpio.h</file>
             <file>$PROJ_DIR$\Release\Exe\UART.out</file>
-            <file>$TOOLKIT_DIR$\inc\c\DLib_Config_Full.h</file>
-            <file>$PROJ_DIR$\Release\List\UART.map</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\i2c.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\rtc.h</file>
             <file>$PROJ_DIR$\Release\Obj\retarget.__cstat.et</file>
-            <file>$PROJ_DIR$\Release\Obj\clk.__cstat.et</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\crc.h</file>
-            <file>$PROJ_DIR$\Release\Obj\retarget.pbi</file>
-            <file>$PROJ_DIR$\Release\Obj\gpio.pbi</file>
-            <file>$PROJ_DIR$\Release\Obj\uart.pbi</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\pdma.h</file>
-            <file>$PROJ_DIR$\Release\Obj\gpio.__cstat.et</file>
             <file>$TOOLKIT_DIR$\inc\c\cmsis_iar.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\intrinsics.h</file>
+            <file>$PROJ_DIR$\Release\Obj\clk.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\ycheck.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Config_Full.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\pdma.h</file>
+            <file>$PROJ_DIR$\Release\Obj\uart.__cstat.et</file>
             <file>$PROJ_DIR$\..\..\..\Library\CMSIS\Include\core_cmFunc.h</file>
             <file>$TOOLKIT_DIR$\inc\c\ysizet.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\i2c.h</file>
+            <file>$PROJ_DIR$\Release\Obj\retarget.pbi</file>
+            <file>$PROJ_DIR$\Release\Obj\uart.pbi</file>
+            <file>$TOOLKIT_DIR$\lib\rt6M_tl.a</file>
+            <file>$PROJ_DIR$\..\..\..\Library\CMSIS\Include\core_cmInstr.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\clk.h</file>
+            <file>$PROJ_DIR$\Release\List\UART.map</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\crc.h</file>
+            <file>$PROJ_DIR$\Release\Obj\gpio.pbi</file>
+            <file>$PROJ_DIR$\Release\Obj\gpio.__cstat.et</file>
             <file>$PROJ_DIR$\Release\Obj\sys.__cstat.et</file>
-            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\rtc.h</file>
-            <file>$TOOLKIT_DIR$\inc\c\intrinsics.h</file>
-            <file>$TOOLKIT_DIR$\inc\c\ycheck.h</file>
-            <file>$TOOLKIT_DIR$\src\lib\dlib\edg\main.h</file>
+            <file>$PROJ_DIR$\Release\Obj\sys.o</file>
+            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\gpio.c</file>
+            <file>$PROJ_DIR$\..\main.c</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Defaults.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\sys.c</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\fmc.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\retarget.c</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Product.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\uart.h</file>
+            <file>$PROJ_DIR$\Release\Exe\UART_TxRx_Function.bin</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\scuart.h</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\clk.c</file>
+            <file>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\system_Nano103.c</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\src\uart.c</file>
+            <file>$PROJ_DIR$\..\..\..\Library\StdDriver\inc\wwdt.h</file>
         </outputs>
+        <file>
+            <name>$PROJ_DIR$\Release\Exe\UART.out</name>
+            <outputs>
+                <tool>
+                    <name>OBJCOPY</name>
+                    <file> 65</file>
+                </tool>
+                <tool>
+                    <name>ILINK</name>
+                    <file> 50</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ILINK</name>
+                    <file> 27 1 13 16 30 8 55 29 9 47 19 26</file>
+                </tool>
+            </inputs>
+        </file>
         <file>
             <name>[ROOT_NODE]</name>
             <outputs>
                 <tool>
                     <name>ILINK</name>
-                    <file> 52 54</file>
+                    <file> 32 50</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 8</file>
                 </tool>
             </outputs>
         </file>
@@ -92,82 +119,21 @@
             <outputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 60</file>
-                </tool>
-                <tool>
-                    <name>__cstat</name>
-                    <file> 63</file>
-                </tool>
-            </outputs>
-            <inputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 1 41 28 13 64 20 62 25 65 70 46 37 39 55 68 44 47 51 34 33 58 19 22 23 10 11 49 0 53 7 69</file>
-                </tool>
-            </inputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\clk.c</name>
-            <outputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 31</file>
+                    <file> 52</file>
                 </tool>
                 <tool>
                     <name>ICCARM</name>
-                    <file> 35 42 16 26 15 29 45</file>
+                    <file> 13</file>
                 </tool>
                 <tool>
                     <name>__cstat</name>
-                    <file> 57</file>
+                    <file> 53</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 1 28 41 13 64 20 62 25 65 70 46 39 55 68 44 47 37 51 34 33 58 19 22 23 10 11 49 0 53 7 69</file>
-                </tool>
-                <tool>
-                    <name>ICCARM</name>
-                    <file> 47 37 41 70 46 0 53 7 49 64 69 65 28 20 51 39 34 1 33 55 58 62 19 68 22 13 23 44 10 25 11 2 6 36 66 4 5 8 9</file>
-                </tool>
-            </inputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\retarget.c</name>
-            <outputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 59</file>
-                </tool>
-                <tool>
-                    <name>__cstat</name>
-                    <file> 56</file>
-                </tool>
-            </outputs>
-            <inputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 41 33 64 23 70 51 19 11 46 37 34 58 22 10 49 47 66 0 53 7 28 20 39 1 55 62 68 13 44 25 65 69 36</file>
-                </tool>
-            </inputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\sys.c</name>
-            <outputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 21</file>
-                </tool>
-                <tool>
-                    <name>__cstat</name>
-                    <file> 67</file>
-                </tool>
-            </outputs>
-            <inputs>
-                <tool>
-                    <name>BICOMP</name>
-                    <file> 1 41 37 13 64 20 62 25 65 70 46 28 39 55 68 44 47 51 34 33 58 19 22 23 10 11 49 0 53 7 69</file>
+                    <file> 61 4 28 66 35 23 40 21 42 38 10 22 14 44 33 7 11 49 2 31 51 15 24 25 64 70 48 59 39 63 36</file>
                 </tool>
             </inputs>
         </file>
@@ -176,17 +142,94 @@
             <outputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 40</file>
+                    <file> 3</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 16</file>
                 </tool>
                 <tool>
                     <name>__cstat</name>
-                    <file> 24</file>
+                    <file> 17</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 13 66 28 1 41 7 20 62 25 65 70 69 64 10 0 53 46 39 55 68 44 47 37 51 34 33 58 19 22 23 11 49 36</file>
+                    <file> 66 43 28 61 4 63 23 40 21 42 38 36 35 64 59 39 10 14 44 33 7 11 22 49 2 31 51 15 24 25 70 48 20</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\sys.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 12</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 55</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 54</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 61 4 22 66 35 23 40 21 42 38 10 28 14 44 33 7 11 49 2 31 51 15 24 25 64 70 48 59 39 63 36</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\retarget.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 45</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 30</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 34</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 4 31 35 25 38 49 15 70 10 22 2 51 24 64 48 11 43 59 39 63 28 23 14 61 44 40 33 66 7 21 42 36 20</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\Library\StdDriver\src\clk.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 0</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 1 13 16 30 55 29 9</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 37</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 61 28 4 66 35 23 40 21 42 38 10 14 44 33 7 11 22 49 2 31 51 15 24 25 64 70 48 59 39 63 36</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 11 22 4 38 10 59 39 63 48 35 36 42 28 23 49 14 2 61 31 44 51 40 15 33 24 66 25 7 64 21 70 57 58 20 43 62 60 68 69</file>
                 </tool>
             </inputs>
         </file>
@@ -195,17 +238,21 @@
             <outputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 38</file>
+                    <file> 5</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 29</file>
                 </tool>
                 <tool>
                     <name>__cstat</name>
-                    <file> 43</file>
+                    <file> 6</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 7 68 39 64 46 55 44 47 70 0 53 28 20 1 62 13 25 41 65 37 51 34 33 58 19 22 23 10 11 49 69</file>
+                    <file> 63 33 14 35 10 44 7 11 38 59 39 28 23 61 40 66 21 4 42 22 49 2 31 51 15 24 25 64 70 48 36</file>
                 </tool>
             </inputs>
         </file>
@@ -214,45 +261,21 @@
             <outputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 61</file>
+                    <file> 46</file>
+                </tool>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 9</file>
                 </tool>
                 <tool>
                     <name>__cstat</name>
-                    <file> 48</file>
+                    <file> 41</file>
                 </tool>
             </outputs>
             <inputs>
                 <tool>
                     <name>BICOMP</name>
-                    <file> 19 70 51 11 46 41 33 23 64 37 34 58 22 10 49 47 66 0 53 7 28 20 39 1 55 62 68 13 44 25 65 69 36</file>
-                </tool>
-            </inputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</name>
-            <outputs>
-                <tool>
-                    <name>AARM</name>
-                    <file> 32</file>
-                </tool>
-            </outputs>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\Release\Exe\UART.out</name>
-            <outputs>
-                <tool>
-                    <name>ILINK</name>
-                    <file> 54</file>
-                </tool>
-                <tool>
-                    <name>OBJCOPY</name>
-                    <file> 12</file>
-                </tool>
-            </outputs>
-            <inputs>
-                <tool>
-                    <name>ILINK</name>
-                    <file> 17 35 42 16 26 32 15 29 45 50 30 27</file>
+                    <file> 15 38 49 70 10 4 31 25 35 22 2 51 24 64 48 11 43 59 39 63 28 23 14 61 44 40 33 66 7 21 42 36 20</file>
                 </tool>
             </inputs>
         </file>
