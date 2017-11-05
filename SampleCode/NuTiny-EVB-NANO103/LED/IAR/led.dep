@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <fileVersion>2</fileVersion>
+    <fileChecksum>1218367995</fileChecksum>
+    <configuration>
+        <name>Release</name>
+        <outputs>
+            <file>$PROJ_DIR$\Release\Obj\system_Nano103.o</file>
+            <file>$TOOLKIT_DIR$\lib\shb_l.a</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\gpio.c</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\sys.c</file>
+            <file>$PROJ_DIR$\..\main.c</file>
+            <file>$TOOLKIT_DIR$\inc\c\ycheck.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\retarget.c</file>
+            <file>$PROJ_DIR$\Release\Obj\startup_Nano103.o</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\pdma.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\clk.c</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Source\system_Nano103.c</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdint.h</file>
+            <file>$PROJ_DIR$\Release\Obj\gpio.pbi</file>
+            <file>$TOOLKIT_DIR$\config\generic_cortex.icf</file>
+            <file>$PROJ_DIR$\Release\Obj\main.pbi</file>
+            <file>$PROJ_DIR$\Release\Obj\retarget.o</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\i2c.h</file>
+            <file>$PROJ_DIR$\Release\Obj\system_Nano103.pbi</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\timer.h</file>
+            <file>$TOOLKIT_DIR$\lib\rt6M_tl.a</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\sys.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\wdt.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Product.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\crc.h</file>
+            <file>$PROJ_DIR$\Release\Obj\clk.pbi</file>
+            <file>$TOOLKIT_DIR$\lib\dl6M_tlf.a</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Include\core_cmFunc.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\pwm.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\intrinsics.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Include\system_Nano103.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Config_Full.h</file>
+            <file>$PROJ_DIR$\Release\Obj\gpio.o</file>
+            <file>$PROJ_DIR$\Release\Obj\main.o</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\fmc.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\scuart.h</file>
+            <file>$PROJ_DIR$\Release\Obj\sys.o</file>
+            <file>$PROJ_DIR$\Release\Obj\led.pbd</file>
+            <file>$PROJ_DIR$\Release\Obj\retarget.pbi</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\adc.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\cmsis_iar.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\yvals.h</file>
+            <file>$TOOLKIT_DIR$\lib\m6M_tl.a</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\sc.h</file>
+            <file>$PROJ_DIR$\Release\Exe\led.bin</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\acmp.h</file>
+            <file>$PROJ_DIR$\Release\Obj\clk.o</file>
+            <file>$PROJ_DIR$\Release\Exe\led.out</file>
+            <file>$PROJ_DIR$\Release\Obj\sys.pbi</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\wwdt.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\uart.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Include\core_cmInstr.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Include\Nano103.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Defaults.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\rtc.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\clk.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Include\core_cm0.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\gpio.h</file>
+            <file>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\spi.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\ysizet.h</file>
+        </outputs>
+        <file>
+            <name>[ROOT_NODE]</name>
+            <outputs>
+                <tool>
+                    <name>ILINK</name>
+                    <file> 47</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Source\IAR\startup_Nano103.s</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 8</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\gpio.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 32</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 13</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 53 57 12 6 41 54 31 23 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 34 12 30 35 40 21 9 22 27 6 41 57 45 17 55 19 53 56 39 58 24 28 43 59 51 50 52 54 31 23 29</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\sys.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 36</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 48</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 53 57 12 6 41 54 31 23 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 34 12 57 35 40 21 9 22 27 6 41 30 45 17 55 19 53 56 39 58 24 28 43 59 51 50 52 54 31 23 29</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\main.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 33</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 15</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 53 57 12 6 41 54 31 23 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 34 12 35 40 30 21 9 22 27 6 41 57 45 17 55 19 53 56 39 58 24 28 43 59 51 50 52 54 31 23 29</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\retarget.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 16</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 38</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 49 6 41 54 31 23 60 53 57 12 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 12 58 40 59 6 56 28 50 41 57 39 24 43 51 52 53 60 54 31 23 30 21 45 34 17 9 55 35 19 22 27 29 49</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\clk.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 46</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 25</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 53 57 12 6 41 54 31 23 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 34 30 12 35 40 21 9 22 27 6 41 45 17 55 19 53 57 56 39 58 24 28 43 59 51 50 52 54 31 23 29</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\Nano103\Source\system_Nano103.c</name>
+            <outputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 0</file>
+                </tool>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 18</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ICCARM</name>
+                    <file> 12 6 41 54 31 23 53 57 52 40 29 27 30 21 56 45 39 34 58 17 24 9 28 55 43 35 59 19 51 22 50</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\Release\Exe\led.out</name>
+            <outputs>
+                <tool>
+                    <name>OBJCOPY</name>
+                    <file> 44</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>ILINK</name>
+                    <file> 14 46 32 33 16 8 36 0 1 20 42 26</file>
+                </tool>
+            </inputs>
+        </file>
+    </configuration>
+</project>

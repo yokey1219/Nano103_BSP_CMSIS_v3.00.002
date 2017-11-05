@@ -1,0 +1,13 @@
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\arm\bin\armproc.dll" 
+
+"C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\arm\..\..\..\Nuvoton Tools\Nu-Link_IAR\Nu-Link_IAR.dll" 
+
+"C:\Users\yokey\Documents\youmans\Nano103_BSP_CMSIS_v3.00.002\SampleCode\StdDriver\UART_FlowCtrl\IAR\Release\Exe\UART.out" 
+
+--plugin "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\arm\bin\armbat.dll" 
+
+--flash_loader "C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\arm\config\flashloader\Nuvoton\Nano103_APROM.board" 
+
+
+
+
