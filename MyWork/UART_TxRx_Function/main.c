@@ -10,6 +10,8 @@
 *****************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "Nano103.h"
 
 #include "uart.h"
@@ -32,6 +34,7 @@ uint8_t g_u8Uart0RecData[RXBUFSIZE]  = {0};
 
 uint8_t g_u8Uart0SendDataini[5]={0xaa,0x01,0x0b,0x00,0x0a};
 uint8_t g_u8Uart0SendDataque[4]={0xaa,0x00,0x04,0x04};
+uint8_t g_u8Uart0SendDataNoReport[]={0xAA,0x14,0x02,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0xE9 };
 volatile int32_t g_uart0binit=TRUE;
 volatile int32_t g_uart0que=TRUE;
 volatile uint32_t g_uart0myidx=0;
@@ -224,7 +227,7 @@ void UART0_TEST_HANDLE()
 
             printf("%c ", u8InChar);
             /* Check if buffer full */
-                if(g_u32com0Rbytes < RXBUFSIZE) {
+                if(1){//if(g_step>=2){//if(g_u32com0Rbytes < RXBUFSIZE) {
                     /* Enqueue the character */
                     g_u8Uart0RecData[g_u32com0Rtail] = u8InChar;
                     g_u32com0Rtail = (g_u32com0Rtail == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rtail+1);
@@ -232,40 +235,24 @@ void UART0_TEST_HANDLE()
                     //g_u32testcnt++;
                 }
     }
-      // if(g_u32testcnt>8)
-      // {
-      //    NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,313131\r\n",39);
-      //    g_u32testcnt=0;
-      // }
     }
 
-    /* Check Tx empty */
-    /*if(u32IntSts & UART_INTSTS_THREIF_Msk) {
-      if(g_uart0binit)
-        {
-          
-          for(g_uart0myidx=0;g_uart0myidx<5;g_uart0myidx++)
-          {
-            u8InChar=g_u8Uart0SendDataini[g_uart0myidx];
-            UART_WRITE(UART0,u8InChar);
+     /* Check Tx empty */
+    if(u32IntSts & UART_INTSTS_THREIF_Msk) {
+           uint16_t tmp;
+           tmp = g_uart0sendtail;
+           if(g_uart0sendhead != tmp) {
+               u8InChar = g_u8Uart0SendData[g_uart0sendhead];
+            /* print the received char on screen */
+               UART_WRITE(UART0,u8InChar);
+               g_uart0sendhead = (g_uart0sendhead == (RXBUFSIZE-1)) ? 0 : (g_uart0sendhead+1);
             
           }
-          g_uart0binit=FALSE;
-        }
-         
-        if(g_uart0que)
-        {
-          for(g_uart0myidx=0;g_uart0myidx<4;g_uart0myidx++)
+          else
           {
-            u8InChar=g_u8Uart0SendDataque[g_uart0myidx];
-            UART_WRITE(UART0,u8InChar);
-            
+            UART_DISABLE_INT(UART0, ( UART_INTEN_THREIEN_Msk));
           }
-          g_uart0que=FALSE;
         }
-      
-        }*/
-    
 }
 
 /**
@@ -298,11 +285,6 @@ void UART1_TEST_HANDLE()
             u8InChar = UART_READ(UART1);           /* Rx trigger level is 1 byte*/
 
             printf("%c ", u8InChar);
-
-           // if(u8InChar == '0') {
-           //     g_bWait = FALSE;
-           // }
-            //if(u8InChar=='\n'||u8InChar=='\0') continue;
             
             {
                 /* Check if buffer full */
@@ -324,6 +306,7 @@ void UART1_TEST_HANDLE()
                 else
                   len=RXBUFSIZE-g_u32comRhead+g_u32comRtail;
                 p=(uint8_t*)malloc(len*sizeof(uint8_t));
+
                 
                 uint16_t tmp;
                 uint32_t idx=0;
@@ -344,45 +327,6 @@ void UART1_TEST_HANDLE()
 
     /* Check Tx empty */
     if(u32IntSts & UART_INTSTS_THREIF_Msk) {
-        //uint16_t tmp;
-        //tmp = g_u32comRtail;
-       // if(g_u32comRhead != tmp) {
-       //     u8InChar = g_u8RecData[g_u32comRhead];
-            /* print the received char on screen */
-            //UART_WRITE(UART1,u8InChar);
-       //     g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
-       //     g_u32comRbytes--;
-       // }
-        
-        /*if(g_binit)
-        {
-          
-          for(g_myidx=0;g_myidx<12;g_myidx++)
-          {
-            u8InChar=g_u8SendDataini[g_myidx];
-            UART_WRITE(UART1,u8InChar);
-            
-          }
-          g_binit=FALSE;
-        }*/
-        //if(g_bsend)
-        {
-          //for(g_myidx=0;g_myidx<g_sendlen;g_myidx++)
-          //{
-          //  u8InChar=g_u8SendData[g_myidx];
-          //  UART_WRITE(UART1,u8InChar);
-          //}
-          /*if(g_sendedidx<g_sendlen)
-          {
-             u8InChar=g_u8SendData[g_sendedidx];
-             UART_WRITE(UART1,u8InChar);
-             g_sendedidx++;
-          }
-          else
-          {
-            g_bsend=FALSE;
-            g_sendedidx=0;
-          }*/
            uint16_t tmp;
            tmp = g_sendtail;
            if(g_sendhead != tmp) {
@@ -397,7 +341,6 @@ void UART1_TEST_HANDLE()
             UART_DISABLE_INT(UART1, ( UART_INTEN_THREIEN_Msk));
           }
         }
-    }
 }
 
 
@@ -416,31 +359,42 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
     }
     else if(*str=='+'&&*(str+1)=='C'&&*(str+2)=='G'&&*(str+3)=='A'&&*(str+4)=='T'&&*(str+5)=='T'&&*(str+6)==':'&&*(str+7)!='1')
     {
-      //NBSendTrans("AT+CGATT?\r\n",11);
+      
     }
     else if(*str=='+'&&*(str+1)=='C'&&*(str+2)=='G'&&*(str+3)=='A'&&*(str+4)=='T'&&*(str+5)=='T'&&*(str+6)==':'&&*(str+7)=='1')
     {
        NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
        g_step=1;
     }
-    else if (*str=='+'&&*(str+1)=='N'&&*(str+2)=='S'&&*(str+3)=='O'&&*(str+4)=='N'&&*(str+5)=='M'&&*(str+6)=='I')  //+NSONMI:0,40
+    else if (*str=='+'&&*(str+1)=='N'&&*(str+2)=='S'&&*(str+3)=='O'&&*(str+4)=='N'&&*(str+5)=='M'&&*(str+6)=='I'&&*(str+7)==':')  //+NSONMI:0,40
     {
         //AT+NSORF=0,4
-        NBSendTrans("AT+NSORF=0,40\r\n",15);
+        char s[100]={0};
+        int ci=0;
+        while(ci<99&&ci<(len-8))
+        {
+          s[ci]=*(str+8+ci);
+          ci++;
+        }
+        s[ci<99?ci:99]='\0';
+        
+        char word[100]="AT+NSORF=";
+        char *end="\r\n";
+        strcat(word,s);
+        strcat(word,end);
+        
+        NBSendTrans((uint8_t*)word,11+ci);
     }
   }
   else
   {
     if(g_step==1&&*str=='0')
     {
-      //NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,313233\r\n",39);
+      
       g_step=2;
       g_transed=FALSE;
     }
-    //else if(g_step==1&&*str=='O'&&*(str+1)=='K')
-    //{
-    //  NBSendTrans("AT+NSOCL=0\r\n",12);
-    //}
+    
     else
     if(len==7&&*str=='E'&&*(str+1)=='R'&&*(str+2)=='R')
       {
@@ -467,11 +421,7 @@ void NBSendTrans(uint8_t* strs,int len)
   }
   g_u8SendData[g_sendtail]=0;
   g_sendtail = (g_sendtail == (RXBUFSIZE-1)) ? 0 : (g_sendtail+1);
-  //g_sendlen=i;
-  //g_sendedidx=0;
-  //g_bsend=TRUE;
    UART_ENABLE_INT(UART1, ( UART_INTEN_THREIEN_Msk));
-  //NBTransImmedite(strs,len);
 }
 
 
@@ -482,6 +432,31 @@ void NBTransImmedite(uint8_t* strs,int len)
   UART_WRITE(UART1,'\0');*/
 }
 
+
+void DCSendTrans(uint8_t* strs,int len)
+{
+  int i=0;
+  for(;i<len;i++)
+  {
+     g_u8Uart0SendData[g_uart0sendtail] =*(strs+i);
+     g_uart0sendtail = (g_uart0sendtail == (RXBUFSIZE-1)) ? 0 : (g_uart0sendtail+1);
+  }
+  g_u8Uart0SendData[g_uart0sendtail]=0;
+  g_uart0sendtail = (g_uart0sendtail == (RXBUFSIZE-1)) ? 0 : (g_uart0sendtail+1);
+   UART_ENABLE_INT(UART0, ( UART_INTEN_THREIEN_Msk));
+}
+
+void DCSendTransByte(uint8_t bytes[],int len)
+{
+    int i=0;
+    //int len=(sizeof(bytes) / sizeof(bytes[0]));
+    for(;i<len;i++)
+    {
+        g_u8Uart0SendData[g_uart0sendtail] =bytes[i];
+        g_uart0sendtail = (g_uart0sendtail == (RXBUFSIZE-1)) ? 0 : (g_uart0sendtail+1);
+        UART_ENABLE_INT(UART0, ( UART_INTEN_THREIEN_Msk));
+    }
+}
 
 
 /**
@@ -509,6 +484,15 @@ void UART_FunctionTest()
     /* Enable Interrupt */
     //UART_ENABLE_INT(UART0, (UART_INTEN_RDAIEN_Msk | UART_INTEN_THREIEN_Msk | UART_INTEN_RXTOIEN_Msk));
     //UART_ENABLE_INT(UART1, (UART_INTEN_RDAIEN_Msk | UART_INTEN_THREIEN_Msk | UART_INTEN_RXTOIEN_Msk));
+    UART0_Init();
+    UART_ENABLE_INT(UART0, (UART_INTEN_RDAIEN_Msk | UART_INTEN_RXTOIEN_Msk));
+    NVIC_EnableIRQ(UART0_IRQn);
+    
+    
+    //quit sleep
+    PC0=0;
+    DCSendTransByte(g_u8Uart0SendDataNoReport,24);
+    
     
     UART_ENABLE_INT(UART1, (UART_INTEN_RDAIEN_Msk | UART_INTEN_RXTOIEN_Msk));
     
@@ -531,6 +515,9 @@ void UART_FunctionTest()
     }
     cnt=0;
     
+    //enter sleep
+    //PC0=1;
+    
     while(g_step!=2)
     {
       
@@ -545,11 +532,9 @@ void UART_FunctionTest()
       CLK_SysTickDelay(2000000);
     }
    
-    UART0_Init();
-    UART_ENABLE_INT(UART0, (UART_INTEN_RDAIEN_Msk | UART_INTEN_RXTOIEN_Msk));
-    NVIC_EnableIRQ(UART0_IRQn);
     
-    while(1)
+    
+    while(g_bWait)
     {
           PA14 = 0;
           
@@ -609,6 +594,15 @@ void UART_FunctionTest()
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            //g_uart0que=TRUE;
+                      }
+                      else if(cmd==0x00)
+                      {
+                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                           uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
+                           if(sta==0x00)
+                           {
+                             PC0=1;
+                           }
                       }
                       else
                       {

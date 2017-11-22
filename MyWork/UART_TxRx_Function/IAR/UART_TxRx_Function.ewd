@@ -1094,7 +1094,7 @@
                 <debug>0</debug>
                 <option>
                     <name>CThirdPartyDriverDll</name>
-                    <state>$TOOLKIT_DIR$\..\..\..\Nuvoton Tools\Nu-Link_IAR\Nu-Link_IAR.dll</state>
+                    <state>C:\Program Files (x86)\Nuvoton Tools\Nu-Link_IAR\Nu-Link_IAR.dll</state>
                 </option>
                 <option>
                     <name>CThirdPartyLogFileCheck</name>
@@ -1140,7 +1140,7 @@
                 </option>
                 <option>
                     <name>CCMSPFetTargetVoltage</name>
-                    <state>###Uninitialized###</state>
+                    <state>3.0</state>
                 </option>
                 <option>
                     <name>CCMSPFetVCCDefault</name>
