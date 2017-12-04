@@ -23,14 +23,27 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
+struct _send_cmd
+{
+  uint16_t msgid;
+  uint16_t cmdid;
+  uint16_t datalen;
+  uint8_t* data;
+  struct _send_cmd * next;
+};
+typedef struct _send_cmd SendCMD;
 
-
-
+uint8_t seriallen=0;
+uint8_t* serialno;
+SendCMD* phead=NULL;
+SendCMD* ptail=NULL;
 /*---------------------------------------------------------------------------------------------------------*/
 /*For Uart0                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
 uint8_t g_u8Uart0SendData[RXBUFSIZE] = {0};
 uint8_t g_u8Uart0RecData[RXBUFSIZE]  = {0};
+uint8_t g_serialno[20]={0};
+uint8_t g_seriallen=0;
 
 uint8_t g_u8Uart0SendDataini[5]={0xaa,0x01,0x0b,0x00,0x0a};
 uint8_t g_u8Uart0SendDataque[4]={0xaa,0x00,0x04,0x04};
@@ -45,7 +58,7 @@ volatile uint32_t g_uart0sendtail=0;
 volatile uint32_t g_u32com0Rbytes = 0;
 volatile uint32_t g_u32com0Rhead  = 0;
 volatile uint32_t g_u32com0Rtail  = 0;
-
+ 
 
 volatile uint32_t g_u32testcnt=0;
 
@@ -299,6 +312,7 @@ void UART1_TEST_HANDLE()
             }
             if(u8InChar=='\n')
             {
+                uint16_t tmp;
                 uint8_t* p;
                 uint32_t len;
                 if(g_u32comRhead<g_u32comRtail)
@@ -308,7 +322,7 @@ void UART1_TEST_HANDLE()
                 p=(uint8_t*)malloc(len*sizeof(uint8_t));
 
                 
-                uint16_t tmp;
+                
                 uint32_t idx=0;
                 tmp = g_u32comRtail;
                 while(g_u32comRhead != tmp) {
@@ -347,6 +361,15 @@ void UART1_TEST_HANDLE()
 
 void NBFunctionTest(uint8_t* str,uint32_t len)
 {
+  if(len==2&&*str=='\r'&&*(str+1)=='\n')
+  {
+  }
+  else
+     if(len==4&&*str=='O'&&*(str+1)=='K')
+    {
+      
+    }
+    else
   if(len>=8)
   {
     if(*str=='+'&&*(str+1)=='N'&&*(str+2)=='B')
@@ -363,7 +386,9 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
     }
     else if(*str=='+'&&*(str+1)=='C'&&*(str+2)=='G'&&*(str+3)=='A'&&*(str+4)=='T'&&*(str+5)=='T'&&*(str+6)==':'&&*(str+7)=='1')
     {
-       NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
+       g_seriallen=0;
+       NBSendTrans("AT+CIMI\r\n",9);
+       //NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
        g_step=1;
     }
     else if (*str=='+'&&*(str+1)=='N'&&*(str+2)=='S'&&*(str+3)=='O'&&*(str+4)=='N'&&*(str+5)=='M'&&*(str+6)=='I'&&*(str+7)==':')  //+NSONMI:0,40
@@ -385,16 +410,27 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
         
         NBSendTrans((uint8_t*)word,11+ci);
     }
+    else
+    if(g_step==1)
+    {
+      while(*(str+g_seriallen)!='\r'&&g_seriallen<20)
+      {
+        g_serialno[g_seriallen]=*(str+g_seriallen);
+        g_seriallen+=1;
+      }
+      if(g_seriallen>=20) g_seriallen=19;
+      g_serialno[g_seriallen]='\0';
+      NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
+      g_step=2;
+    }
   }
   else
   {
-    if(g_step==1&&*str=='0')
-    {
-      
-      g_step=2;
+    if(g_step==2&&*str=='0')
+    { 
+      g_step=3;
       g_transed=FALSE;
     }
-    
     else
     if(len==7&&*str=='E'&&*(str+1)=='R'&&*(str+2)=='R')
       {
@@ -458,6 +494,101 @@ void DCSendTransByte(uint8_t bytes[],int len)
     }
 }
 
+void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
+{
+  SendCMD* cmd=(SendCMD*)malloc(sizeof(SendCMD));
+  if(phead==NULL)
+  {
+    cmd->msgid=0;
+    phead=cmd;
+    ptail=cmd;
+  }
+  else
+  {
+    uint16_t _msgid;
+    _msgid=ptail->msgid>65535?0:ptail->msgid+1;
+    cmd->msgid=_msgid;
+    ptail->next=cmd;
+    ptail=cmd;
+  }
+    cmd->cmdid=cmdid;
+    cmd->data=data;
+    cmd->datalen=datalen;
+    //uint8_t* transdata=(uint8_t*)malloc(sizeof(uint8_t)*(2+2+1+g_seriallen+2+datalen));
+    uint16_t transdatalen=2+2+1+g_seriallen+2+datalen;
+    char transdata[100]={0};
+    sprintf(transdata,"AT+NSOST=0,119.23.12.86,8081,%d,",transdatalen);
+    char tmpbyte[3]={0};
+    sprintf(tmpbyte,"%X",cmd->msgid>>8);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    sprintf(tmpbyte,"%X",cmd->msgid&0x00ff);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    
+    sprintf(tmpbyte,"%X",cmdid>>8);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    sprintf(tmpbyte,"%X",cmdid&0x00ff);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    sprintf(tmpbyte,"%X",g_seriallen);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    int i=0;
+    for(;i<g_seriallen;i++)
+    { 
+      sprintf(tmpbyte,"%X",g_serialno[i]);
+      if(strlen(tmpbyte)==1)
+      {
+        strcat(transdata,"0");
+      }
+      strcat(transdata,tmpbyte);
+    } 
+    
+    uint16_t totallen=strlen(transdata)+transdatalen+2;
+    
+   
+     sprintf(tmpbyte,"%X",datalen>>8);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+    
+    sprintf(tmpbyte,"%X",datalen&0x00ff);
+    if(strlen(tmpbyte)==1)
+    {
+      strcat(transdata,"0");
+    }
+    strcat(transdata,tmpbyte);
+   
+    strcat(transdata,(char*)data);
+    strcat(transdata,"\r\n");
+    NBSendTrans((uint8_t*)transdata,totallen);
+    
+}
+
 
 /**
  *  @brief The function is UART demo code.
@@ -500,7 +631,7 @@ void UART_FunctionTest()
     NVIC_EnableIRQ(UART1_IRQn);
     //NBTransImmedite("AT+NBAND?\r\n",11);
     uint32_t cnt=0;
-    while(g_step<2)
+    while(g_step<3)
     {
       PA14 = 0;
       CLK_SysTickDelay(50000);
@@ -518,7 +649,7 @@ void UART_FunctionTest()
     //enter sleep
     //PC0=1;
     
-    while(g_step!=2)
+    while(g_step!=3)
     {
       
       PA14 = 0;
@@ -532,7 +663,7 @@ void UART_FunctionTest()
       CLK_SysTickDelay(2000000);
     }
    
-    
+    uint8_t stadata[3]={0};
     
     while(g_bWait)
     {
@@ -577,18 +708,31 @@ void UART_FunctionTest()
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
-                           if(sta==0x00)
+                           /*if(sta==0x00)
                            {
-                             NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,303030\r\n",39);
+                             //NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,303030\r\n",39);
+                             stadata[0]=0;
+                             NBSendCmd(1,&stadata);
                            }
                             else if(sta==0x01)
                            {
-                             NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,313131\r\n",39);
+                             //NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,313131\r\n",39);
+                             stadata
+                             NBSendCmd(1,{1});
                            }
                            else
                            {
                              NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,323232\r\n",39);
+                             NBSendCmd(1,{sta});
+                           }*/
+                           sprintf(stadata,"%x",sta);
+                           if(strlen(stadata)==1)
+                           {
+                             stadata[1]=stadata[0];
+                             stadata[0]='0';
                            }
+                           NBSendCmd(1,stadata,1);
+                           
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
