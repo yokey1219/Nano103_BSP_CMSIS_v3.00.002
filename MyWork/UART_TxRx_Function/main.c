@@ -37,6 +37,15 @@ uint8_t seriallen=0;
 uint8_t* serialno;
 SendCMD* phead=NULL;
 SendCMD* ptail=NULL;
+
+
+const uint16_t CMDID_LOGIN=0;
+const uint16_t CMDID_BINDPARKING=1;
+const uint16_t CMDID_REPORTCARPARKING=2;
+const uint16_t CMDID_REPORTSTATUS=3;
+
+uint8_t g_loginarg[1]={0};
+volatile int32_t g_bwaitserverdata    =FALSE;
 /*---------------------------------------------------------------------------------------------------------*/
 /*For Uart0                                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -79,6 +88,7 @@ volatile uint32_t g_sendedidx=0;
 volatile uint32_t g_sendhead=0;
 volatile uint32_t g_sendtail=0;
 volatile uint32_t g_step=0;
+volatile uint32_t g_finishstep=100;
 
 volatile uint32_t g_u32comRbytes = 0;
 volatile uint32_t g_u32comRhead  = 0;
@@ -100,6 +110,7 @@ void UART_FunctionTest(void);
 void NBFunctionTest(uint8_t*,uint32_t);
 void NBSendTrans(uint8_t* strs,int len);
 void NBTransImmedite(uint8_t* strs,int len);
+void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen);
 /**
  *  @brief  Init system clock and I/O multi function .
  *  @param  None
@@ -361,6 +372,17 @@ void UART1_TEST_HANDLE()
 
 void NBFunctionTest(uint8_t* str,uint32_t len)
 {
+  if(g_bwaitserverdata)
+  {
+    if((*str=='O'&&*(str+1)=='K')||(*(str+2)='O'&&*(str+3)=='K'))
+    {
+      if(g_step==4)
+        g_step=g_finishstep;
+      g_bwaitserverdata=FALSE;
+    }
+    return;
+  }
+  
   if(len==2&&*str=='\r'&&*(str+1)=='\n')
   {
   }
@@ -409,6 +431,7 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
         strcat(word,end);
         
         NBSendTrans((uint8_t*)word,11+ci);
+        g_bwaitserverdata=TRUE;
     }
     else
     if(g_step==1)
@@ -430,6 +453,8 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
     { 
       g_step=3;
       g_transed=FALSE;
+      NBSendCmd(CMDID_LOGIN,g_loginarg,0);
+      g_step=4;
     }
     else
     if(len==7&&*str=='E'&&*(str+1)=='R'&&*(str+2)=='R')
@@ -518,6 +543,7 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
     uint16_t transdatalen=2+2+1+g_seriallen+2+datalen;
     char transdata[100]={0};
     sprintf(transdata,"AT+NSOST=0,119.23.12.86,8081,%d,",transdatalen);
+    uint16_t totallen=strlen(transdata)+transdatalen*2+2;
     char tmpbyte[3]={0};
     sprintf(tmpbyte,"%X",cmd->msgid>>8);
     if(strlen(tmpbyte)==1)
@@ -566,7 +592,7 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
       strcat(transdata,tmpbyte);
     } 
     
-    uint16_t totallen=strlen(transdata)+transdatalen+2;
+    
     
    
      sprintf(tmpbyte,"%X",datalen>>8);
@@ -631,7 +657,7 @@ void UART_FunctionTest()
     NVIC_EnableIRQ(UART1_IRQn);
     //NBTransImmedite("AT+NBAND?\r\n",11);
     uint32_t cnt=0;
-    while(g_step<3)
+    while(g_step<1)
     {
       PA14 = 0;
       CLK_SysTickDelay(50000);
@@ -649,7 +675,7 @@ void UART_FunctionTest()
     //enter sleep
     //PC0=1;
     
-    while(g_step!=3)
+    while(g_step<3)
     {
       
       PA14 = 0;
@@ -663,6 +689,11 @@ void UART_FunctionTest()
       CLK_SysTickDelay(2000000);
     }
    
+    while(g_step!=g_finishstep)//wait for longin end
+    {
+      CLK_SysTickDelay(2000000);
+    }
+    
     uint8_t stadata[3]={0};
     
     while(g_bWait)
@@ -731,7 +762,7 @@ void UART_FunctionTest()
                              stadata[1]=stadata[0];
                              stadata[0]='0';
                            }
-                           NBSendCmd(1,stadata,1);
+                           NBSendCmd(CMDID_REPORTCARPARKING,stadata,1);
                            
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
