@@ -16,7 +16,7 @@
 
 #include "uart.h"
 
-#define RXBUFSIZE 1024
+#define RXBUFSIZE 512
 #define PLLCON_SETTING      CLK_PLLCON_84MHz_HXT
 #define PLL_CLOCK           84000000
 
@@ -29,6 +29,8 @@ struct _send_cmd
   uint16_t cmdid;
   uint16_t datalen;
   uint8_t* data;
+  uint8_t waited;
+  int32_t replyed;
   struct _send_cmd * next;
 };
 typedef struct _send_cmd SendCMD;
@@ -54,9 +56,9 @@ uint8_t g_u8Uart0RecData[RXBUFSIZE]  = {0};
 uint8_t g_serialno[20]={0};
 uint8_t g_seriallen=0;
 
-uint8_t g_u8Uart0SendDataini[5]={0xaa,0x01,0x0b,0x00,0x0a};
-uint8_t g_u8Uart0SendDataque[4]={0xaa,0x00,0x04,0x04};
-uint8_t g_u8Uart0SendDataNoReport[]={0xAA,0x14,0x02,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0xE9 };
+uint8_t g_u8Uart0SendDataini[5]={0xaa,0x01,0x0b,0x00,0x0a};   //INFO查询
+uint8_t g_u8Uart0SendDataque[4]={0xaa,0x00,0x04,0x04};//状态查询
+uint8_t g_u8Uart0SendDataNoReport[]={0xAA,0x14,0x02,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0xE9 };//关闭报告周期
 volatile int32_t g_uart0binit=TRUE;
 volatile int32_t g_uart0que=TRUE;
 volatile uint32_t g_uart0myidx=0;
@@ -330,20 +332,45 @@ void UART1_TEST_HANDLE()
                   len=g_u32comRtail-g_u32comRhead;
                 else
                   len=RXBUFSIZE-g_u32comRhead+g_u32comRtail;
-                p=(uint8_t*)malloc(len*sizeof(uint8_t));
-
-                
-                
-                uint32_t idx=0;
-                tmp = g_u32comRtail;
-                while(g_u32comRhead != tmp) {
-                   u8InChar = g_u8RecData[g_u32comRhead];
-                   *(p+idx)=u8InChar;
-                   g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
-                   g_u32comRbytes--;
-                   idx++;
+                if(len>4)
+                {  
+                    tmp = g_u32comRtail;
+                    while(g_u32comRhead!=tmp)
+                    {
+                      if(g_u8RecData[g_u32comRhead]=='\r')
+                        break;
+                      g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
+                      g_u32comRbytes--;
+                    }
+                    
+                   if(g_u32comRhead<g_u32comRtail)
+                     len=g_u32comRtail-g_u32comRhead;
+                   else
+                     len=RXBUFSIZE-g_u32comRhead+g_u32comRtail;
+                   
+                   if(len>2)
+                   {
+                     
+                     p=(uint8_t*)malloc((len-1)*sizeof(uint8_t));
+                     uint32_t idx=0;
+                     g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
+                     g_u32comRbytes--;
+                     g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
+                     g_u32comRbytes--;
+                     
+                     while(g_u32comRhead != tmp) {
+                       u8InChar = g_u8RecData[g_u32comRhead];
+                       *(p+idx)=u8InChar;
+                       g_u32comRhead = (g_u32comRhead == (RXBUFSIZE-1)) ? 0 : (g_u32comRhead+1);
+                       g_u32comRbytes--;
+                       idx++;
+                    }
+                    *(p+idx)='\0';
+                    len=len-2;
+                    NBFunctionTest(p,len);
+                    free(p);
+                   }
                 }
-                NBFunctionTest(p,len);
             }
            
         }
@@ -368,17 +395,51 @@ void UART1_TEST_HANDLE()
         }
 }
 
-
-
 void NBFunctionTest(uint8_t* str,uint32_t len)
 {
-  if(g_bwaitserverdata)
+  if(g_bwaitserverdata)//如果处于接收服务器数据状态中
   {
-    if((*str=='O'&&*(str+1)=='K')||(*(str+2)='O'&&*(str+3)=='K'))
+    if((*str=='O'&&*(str+1)=='K')||(*(str+2)=='O'&&*(str+3)=='K'))
     {
-      if(g_step==4)
+      if(g_step==4)//已经发送登录消息。
         g_step=g_finishstep;
       g_bwaitserverdata=FALSE;
+    }
+    else
+    {
+      uint32_t sock_no,sock_port,datalen,remainlen;
+      uint8_t ipaddr[20]={0};
+      uint8_t data[100]={0};
+      int _len=sscanf(str,"%u,%s,%u,%u,%s,%u",&sock_no,ipaddr,&sock_port,&datalen,data,&remainlen);
+      {
+        //计算信息，并去除相对应的命令
+        //TODO
+        printf("%u",sock_no);
+        printf("%s",ipaddr);
+        printf("%u",sock_port);
+        printf("%u",datalen);
+        printf("%s",data);
+        printf("%u",remainlen);
+        if(sock_no==0)
+        {
+          uint16_t _msgid;
+          uint16_t _cmdid;
+          sscanf(data,"%4x%4x",&_msgid,&_cmdid);
+          printf("%x",_msgid);
+          /*if(phead!=NULL)
+          {
+            SendCMD* _cmd=phead;
+            if(_cmd->msgid==_msgid)
+            {
+              _cmd->replyed=TRUE;
+            }
+            else
+              _cmd=_cmd->next;
+          }*/
+        }
+      }
+      
+      
     }
     return;
   }
@@ -410,7 +471,6 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
     {
        g_seriallen=0;
        NBSendTrans("AT+CIMI\r\n",9);
-       //NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
        g_step=1;
     }
     else if (*str=='+'&&*(str+1)=='N'&&*(str+2)=='S'&&*(str+3)=='O'&&*(str+4)=='N'&&*(str+5)=='M'&&*(str+6)=='I'&&*(str+7)==':')  //+NSONMI:0,40
@@ -464,7 +524,6 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
         g_transed=TRUE;
       }
   }
-  free(str);
 }
 
 void NBSendTrans(uint8_t* strs,int len)
@@ -519,10 +578,12 @@ void DCSendTransByte(uint8_t bytes[],int len)
     }
 }
 
+volatile uint16_t g_totalmsgid=0;
+
 void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
 {
   SendCMD* cmd=(SendCMD*)malloc(sizeof(SendCMD));
-  if(phead==NULL)
+ /* if(phead==NULL)
   {
     cmd->msgid=0;
     phead=cmd;
@@ -535,7 +596,8 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
     cmd->msgid=_msgid;
     ptail->next=cmd;
     ptail=cmd;
-  }
+  }*/
+    cmd->msgid=g_totalmsgid++;
     cmd->cmdid=cmdid;
     cmd->data=data;
     cmd->datalen=datalen;
@@ -612,7 +674,7 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
     strcat(transdata,(char*)data);
     strcat(transdata,"\r\n");
     NBSendTrans((uint8_t*)transdata,totallen);
-    
+    free(cmd);
 }
 
 
@@ -789,13 +851,16 @@ void UART_FunctionTest()
                         g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
                       }
                 }
-              }   
+              }
+           
+               //ClearReplyedCmd();//清除过期的任务。
+             
               //else
               //{
                 CLK_SysTickDelay(500000);
               //}
-           PA14 = 1;
-           CLK_SysTickDelay(500000);
+                PA14 = 1;
+                CLK_SysTickDelay(500000);
     } // wait user press '0' to exit test
 
     /* Disable Interrupt */
@@ -807,5 +872,36 @@ void UART_FunctionTest()
     printf("\nUART Sample Demo End.\n");
 
 }
+/*
+void ClearReplyedCmd()
+{
+      if(phead==NULL) return;
+      SendCMD* _tmpcmd=phead;
+      SendCMD* newhead,newtail;
+      newhead=NULL;
+      newtail=NULL;
+      while(_tmpcmd!=NULL)
+      {
+        if(_tmpcmd->replyed==TRUE)
+        {
+          free(_tmpcmd);
+        }
+        else
+        {
+          if(newhead==NULL)
+          {
+            newhead=_tmpcmd;
+            newtail=_tmpcmd;
+          }
+          else
+          {
+            newtail->next=_tmpcmd;
+            newtail=_tmpcmd;
+          }
+        }
+        _tmpcmd=_tmpcmd->next;
+          
+      }
+}*/
 
 
