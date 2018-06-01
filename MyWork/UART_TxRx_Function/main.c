@@ -19,6 +19,7 @@
 #define RXBUFSIZE 512
 #define PLLCON_SETTING      CLK_PLLCON_84MHz_HXT
 #define PLL_CLOCK           84000000
+#define ACKMAXSIZE 10
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
@@ -35,16 +36,34 @@ struct _send_cmd
 };
 typedef struct _send_cmd SendCMD;
 
+
+struct _gms_ack
+{
+  uint8_t cmdid;
+  uint8_t stadata[3];
+  struct _gms_ack * next;
+};
+typedef struct _gms_ack GmsAck;
+
+GmsAck* pgmsackhead=NULL;
+GmsAck* pgmsacktail=NULL;
+
 uint8_t seriallen=0;
 uint8_t* serialno;
 SendCMD* phead=NULL;
 SendCMD* ptail=NULL;
 
+uint8_t* g_nbackqueue[ACKMAXSIZE]={0};
+volatile uint32_t g_shead=0;
+volatile uint32_t g_stail=0;
+volatile uint32_t g_ackcnt=0;
+
 
 const uint16_t CMDID_LOGIN=0;
-const uint16_t CMDID_BINDPARKING=1;
+const uint16_t CMDID_STATESYNC=1;
 const uint16_t CMDID_REPORTCARPARKING=2;
 const uint16_t CMDID_REPORTSTATUS=3;
+const uint16_t CMDID_QUERYMODE=4;
 
 uint8_t g_loginarg[1]={0};
 volatile int32_t g_bwaitserverdata    =FALSE;
@@ -59,6 +78,7 @@ uint8_t g_seriallen=0;
 uint8_t g_u8Uart0SendDataini[5]={0xaa,0x01,0x0b,0x00,0x0a};   //INFO查询
 uint8_t g_u8Uart0SendDataque[4]={0xaa,0x00,0x04,0x04};//状态查询
 uint8_t g_u8Uart0SendDataNoReport[]={0xAA,0x14,0x02,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0xE9 };//关闭报告周期
+uint8_t g_u8Uart0SendDataReset[]={0xaa,0x01,0x06,0x00,0x07};
 volatile int32_t g_uart0binit=TRUE;
 volatile int32_t g_uart0que=TRUE;
 volatile uint32_t g_uart0myidx=0;
@@ -100,8 +120,16 @@ volatile int32_t g_i32pointer = 0;
 volatile int32_t g_bInitaled    =FALSE;
 
 
-
+volatile int32_t g_wakeuptimeout=TRUE;
 volatile uint32_t g_transed=TRUE;
+/*-------------------------------工作模式--------------------------------------*/
+/*有三种工作模式：0初始模式；1工程模式；2工作模式                              */
+/*0,初始模式：装置生产的模式，短定时初始化地磁模块，等得切换状态               */
+/*1,工程模式：装置出厂安装前的模式，只有定时唤醒检测NB连接，关闭地磁唤醒。     */
+/*2,工作模式：安装完毕后，切换到工作模式，在切换过程中，初始化地磁。           */
+/*工作模式和工程模式可以相互切换。                                             */
+/*-----------------------------------------------------------------------------*/
+volatile int32_t g_workmode=0;
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -112,7 +140,29 @@ void UART_FunctionTest(void);
 void NBFunctionTest(uint8_t*,uint32_t);
 void NBSendTrans(uint8_t* strs,int len);
 void NBTransImmedite(uint8_t* strs,int len);
-void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen);
+int32_t NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen);
+
+
+
+volatile uint8_t u8ADF;  // ADC conversion finish flag
+
+void ADC_IRQHandler(void);  //ADC interrupt service routine
+
+void ADC_IRQHandler(void)  //ADC interrupt service routine
+{
+    uint32_t u32Flag;  //ADC interrupt status flag
+
+    // Get ADC conversion finish interrupt flag
+    u32Flag = ADC_GET_INT_FLAG(ADC, ADC_ADF_INT);
+
+    // Check ADC conversion finish interrupt flag
+    if(u32Flag & ADC_ADF_INT)
+        u8ADF = 1;
+
+    // Clear ADC conversion finish interrupt flag
+    ADC_CLR_INT_FLAG(ADC, u32Flag);
+}
+
 /**
  *  @brief  Init system clock and I/O multi function .
  *  @param  None
@@ -128,6 +178,9 @@ void SYS_Init(void)
 
     /* Enable External XTAL (4~24 MHz) */
     CLK->PWRCTL |= CLK_PWRCTL_HXTEN_Msk; // HXT Enabled
+    
+    /* Enable External LXT (32 kHz) */
+    CLK->PWRCTL |= CLK_PWRCTL_LXTEN_Msk;
 
     /* Waiting for 12MHz clock ready */
     CLK_WaitClockReady( CLK_STATUS_HXTSTB_Msk);
@@ -138,6 +191,7 @@ void SYS_Init(void)
     /* Enable IP clock */
     CLK->APBCLK |= CLK_APBCLK_UART0_EN; // UART0 Clock Enable
     CLK->APBCLK |= CLK_APBCLK_UART1_EN; // UART1 Clock Enable
+    CLK->APBCLK |= CLK_APBCLK_TMR0CKEN_Msk;
 
     /* Select IP clock source */
     CLK->CLKSEL1 &= ~CLK_CLKSEL1_UART0SEL_Msk;
@@ -145,6 +199,10 @@ void SYS_Init(void)
     CLK->CLKSEL2 &= ~CLK_CLKSEL2_UART1SEL_Msk;
     CLK->CLKSEL2 |= (0x0 << CLK_CLKSEL2_UART1SEL_Pos);// Clock source from external 12 MHz crystal clock
 
+    /* Select Timer0 clock source from LXT */
+    CLK->CLKSEL1 = (CLK->CLKSEL1 & ~CLK_CLKSEL1_TMR0SEL_Msk) | CLK_CLKSEL1_TMR0SEL_LXT;
+    CLK_SetModuleClock(ADC_MODULE,CLK_CLKSEL1_ADCSEL_HIRC,CLK_ADC_CLK_DIVIDER(5));
+    
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate PllClock, SystemCoreClock and CycylesPerUs automatically. */
     SystemCoreClockUpdate();
@@ -163,10 +221,30 @@ void SYS_Init(void)
                        SYS_GPB_MFPL_PB6MFP_Msk | SYS_GPB_MFPL_PB7MFP_Msk);
     SYS->GPB_MFPL |= (SYS_GPB_MFPL_PB4MFP_UART1_RXD | SYS_GPB_MFPL_PB5MFP_UART1_TXD |
                       SYS_GPB_MFPL_PB6MFP_UART1_nRTS  | SYS_GPB_MFPL_PB7MFP_UART1_nCTS);
+    
+    /* Set PA.0 multi-function pin for ADC channel 0 */
+    SYS->GPA_MFPL = (SYS->GPA_MFPL & ~SYS_GPA_MFPL_PA0MFP_Msk) | SYS_GPA_MFPL_PA0MFP_ADC_CH0;
+
+    /* Disable PA.0 digital input path */
+    PA->DINOFF |= ((1 << 0) << GPIO_DINOFF_DINOFF0_Pos);
+
+    /* Enable VBAT DIV 2 */
+    SYS->BATDIVCTL |= 1;
 
     /* Lock protected registers */
     SYS_LockReg();
 
+}
+
+
+
+
+void TMR0_IRQHandler(void)
+{
+    g_wakeuptimeout=FALSE;
+    TIMER_ClearWakeupFlag(TIMER0); /* Clear wakeup interrupt flag */
+    TIMER_ClearIntFlag(TIMER0); /* Clear time-out interrupt flag */
+    TIMER_Close(TIMER0);
 }
 
 /**
@@ -230,6 +308,189 @@ int main(void)
 }
 
 
+
+void GMS_DisableSleep()
+{
+  PC0=0;
+}
+
+void GMS_EnableSleep()
+{
+  PC0=1;
+}
+
+
+void MY_LEDON()
+{
+  PA14=1;
+}
+
+void MY_LEDOFF()
+{
+  PA14=0;
+}
+
+void NB_AddACKStr(uint8_t* str)
+{
+  if(g_ackcnt<ACKMAXSIZE)
+  {
+    g_nbackqueue[g_stail]=str;
+    g_stail=(g_stail==(ACKMAXSIZE-1))?0:(g_stail+1);
+    g_ackcnt++;
+  }
+}
+
+uint8_t* NB_GetACKStr()
+{
+  if(g_ackcnt>0)
+  {
+    uint8_t* _t=g_nbackqueue[g_shead];
+    g_shead=(g_shead==(ACKMAXSIZE-1))?0:(g_shead+1);
+    g_ackcnt--;
+    return _t;
+  }
+  else
+    return NULL;
+}
+
+uint8_t* MY_GetNBReplyWithOK()
+{
+   uint8_t* str=NULL;
+   uint8_t* okstr=NULL;
+   uint32_t cnt=0;
+   while(TRUE)
+   {
+         CLK_SysTickDelay(50000);
+         str=NB_GetACKStr();
+         if(str!=NULL&&strcmp(str,"OK\r\n")!=0)
+         {
+           while(TRUE)
+           {
+             okstr=NB_GetACKStr();
+             if(okstr!=NULL)
+               break;
+             cnt++;
+             if(cnt>60)
+               break;
+             CLK_SysTickDelay(50000);
+           }
+           if(okstr!=NULL)
+           {
+             if(strcmp(okstr,"OK\r\n")==0)
+             {
+               
+                free(okstr);
+                okstr=NULL;
+                break;
+             }
+             else
+             {
+               free(okstr);
+               free(str);
+               okstr=NULL;
+               str=NULL;
+             }
+           }
+         }
+         cnt++;
+         if(cnt>60)
+           break;
+         
+    }
+   return str;
+}
+
+uint8_t* MY_GetNBReplyNoOK()
+{
+   uint8_t* str=NULL;
+   uint32_t cnt=0;
+   while(TRUE)
+   {
+         CLK_SysTickDelay(50000);
+         str=NB_GetACKStr();
+         if(str!=NULL)
+         {
+           break;
+         }
+         cnt++;
+         if(cnt>240)
+           break;
+         
+    }
+   return str;
+}
+
+void MY_CHECKCGATT()
+{
+  NBSendTrans("AT+CGATT?\r\n",11);
+  uint8_t* ackstr;
+  while(TRUE)
+  {
+    CLK_SysTickDelay(50000);
+    ackstr=NB_GetACKStr();
+    if(ackstr!=NULL)
+    {
+      if(strcmp(ackstr,"+CGATT:1\r\n")==0)//匹配成功
+      {
+        free(ackstr);
+        ackstr=MY_GetNBReplyNoOK();// while((ackstr=NB_GetACKStr())==NULL) CLK_SysTickDelay(50000);
+        free(ackstr);
+        break;
+      }
+      else if(strcmp(ackstr,"+CGATT:0\r\n")==0)//匹配情况2成功
+      {
+        free(ackstr);
+        ackstr=MY_GetNBReplyNoOK();//while((ackstr=NB_GetACKStr())==NULL) CLK_SysTickDelay(50000);
+        free(ackstr);
+        CLK_SysTickDelay(50000);
+        NBSendTrans("AT+CGATT?\r\n",11);
+      }
+    }
+    else
+    {
+      NBSendTrans("AT+CGATT?\r\n",11);
+    }
+    CLK_SysTickDelay(50000);
+  }
+  ackstr=NULL;
+}
+
+void MY_GETCIMI()
+{
+       g_seriallen=0;
+       NBSendTrans("AT+CIMI\r\n",9);
+       uint8_t* str=NULL;
+       uint32_t cnt=0;
+       while(TRUE)
+       {
+         CLK_SysTickDelay(50000);
+         str=NB_GetACKStr();
+         if(str!=NULL)
+           break;
+         cnt++;
+         if(cnt>30)
+         {
+           NBSendTrans("AT+CIMI\r\n",9);
+           cnt=0;
+         }
+       }
+   while(*(str+g_seriallen)!='\r'&&g_seriallen<20)
+      {
+        g_serialno[g_seriallen]=*(str+g_seriallen);
+        g_seriallen+=1;
+      }
+      if(g_seriallen>=20) g_seriallen=19;
+      g_serialno[g_seriallen]='\0';
+      free(str);
+      str=NULL;
+}
+
+
+
+
+
+
+
 void UART0_IRQHandler(void)
 {
     UART0_TEST_HANDLE();
@@ -242,6 +503,16 @@ void UART0_TEST_HANDLE()
     uint8_t u8InChar=0xFF;
     uint32_t u32IntSts= UART0->INTSTS;
 
+    
+     /* Wake Up */
+    if (u32IntSts & UART_INTSTS_WKUPIF_Msk) {
+        //printf("UART_Wakeup. \n");
+        UART0->INTSTS = UART_INTSTS_WKUPIF_Msk; //clear status
+
+        if(UART0->WKUPSTS & UART_WKUPSTS_DATWKSTS_Msk)
+            UART0->WKUPSTS = UART_WKUPSTS_DATWKSTS_Msk; //clear status
+    }
+    
     /* Check Receive Data */
     if(u32IntSts & UART_INTSTS_RDAIF_Msk) {
         printf("\nInput:");
@@ -260,7 +531,109 @@ void UART0_TEST_HANDLE()
                     //g_u32com0Rbytes++;
                     //g_u32testcnt++;
                 }
-    }
+      }
+       while(g_u8Uart0RecData[g_u32com0Rhead]!=0xaa&&g_u32com0Rhead!=g_u32com0Rtail)
+         {
+            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+         }
+         
+          uint32_t len;
+          if(g_u32com0Rhead<=g_u32com0Rtail)
+              len=g_u32com0Rtail-g_u32com0Rhead;
+          else
+              len=RXBUFSIZE-g_u32com0Rhead+g_u32com0Rtail;
+           
+      
+          if(len>4)
+          {
+                uint32_t temphead=g_u32com0Rhead;
+                temphead=(temphead == (RXBUFSIZE-1)) ? 0 : (temphead+1);
+                uint8_t cmdlen=g_u8Uart0RecData[temphead];
+                //          g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                //          uint8_t cmdlen=g_u8Uart0RecData[g_u32com0Rhead];
+                if(len>=(cmdlen+4))
+                {
+                          g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                          
+                          g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                          uint8_t cmd=g_u8Uart0RecData[g_u32com0Rhead];
+                          
+                          if(cmd==0x03)
+                          {
+                               GmsAck* _ack=(GmsAck *)malloc(sizeof(GmsAck));
+                               _ack->cmdid=cmd;
+                               _ack->next=NULL;
+                            
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                          
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
+                              
+                               sprintf(_ack->stadata,"%X",sta);
+                               if(_ack->stadata[1]==0)
+                               {
+                                 _ack->stadata[1]=_ack->stadata[0];
+                                 _ack->stadata[0]='0';
+                               }
+                               _ack->stadata[2]=0;
+                               //NBSendCmd(CMDID_REPORTCARPARKING,stadata,1);
+                               
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);//电压
+                               
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);//磁扰强度
+                               
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);//校验码
+                               
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               
+                               
+                                if(pgmsackhead==NULL)
+                               {
+                                 pgmsackhead=_ack;
+                                 pgmsacktail=_ack;
+                               }
+                               else
+                               {
+                                 if(pgmsacktail==NULL)
+                                   pgmsacktail=pgmsackhead;
+                                 pgmsacktail->next=_ack;
+                                 pgmsacktail=_ack;
+                               }
+                               
+                               _ack=NULL;
+                               
+                          }
+                          else if(cmd==0x00)
+                          {
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
+                               
+                               if(sta==0x00)
+                               {
+                                 GMS_EnableSleep();//PC0=1;
+                               }
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                               
+                               g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                          }
+                          else
+                          {
+                            uint8_t i=0;
+                            for(;i<cmdlen;i++)
+                            {
+                              g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                            }
+                            
+                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);//校验码
+                            
+                            g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
+                          }
+                }
+          }
     }
 
      /* Check Tx empty */
@@ -301,6 +674,16 @@ void UART1_TEST_HANDLE()
     uint8_t u8InChar=0xFF;
     uint32_t u32IntSts= UART1->INTSTS;
 
+    
+     /* Wake Up */
+    if (u32IntSts & UART_INTSTS_WKUPIF_Msk) {
+        
+        UART1->INTSTS = UART_INTSTS_WKUPIF_Msk; //clear status
+
+        if(UART1->WKUPSTS & UART_WKUPSTS_DATWKSTS_Msk)
+            UART1->WKUPSTS = UART_WKUPSTS_DATWKSTS_Msk; //clear status
+    }
+    
     /* Check Receive Data */
     if(u32IntSts & UART_INTSTS_RDAIF_Msk) {
         printf("\nInput:");
@@ -367,8 +750,10 @@ void UART1_TEST_HANDLE()
                     }
                     *(p+idx)='\0';
                     len=len-2;
-                    NBFunctionTest(p,len);
-                    free(p);
+                    /*NBFunctionTest(p,len);
+                    free(p);*/
+                    NB_AddACKStr(p);
+                    p=NULL;
                    }
                 }
             }
@@ -394,6 +779,9 @@ void UART1_TEST_HANDLE()
           }
         }
 }
+
+
+
 
 void NBFunctionTest(uint8_t* str,uint32_t len)
 {
@@ -518,22 +906,18 @@ void NBFunctionTest(uint8_t* str,uint32_t len)
     }
     else
     if(len==7&&*str=='E'&&*(str+1)=='R'&&*(str+2)=='R')
-      {
+     {
         
         g_step=1;
         g_transed=TRUE;
-      }
+     }
   }
 }
 
 void NBSendTrans(uint8_t* strs,int len)
 {
-  
- 
   int i=0;
-  //int len=sizeof(strs)/sizeof(uint8_t)-1;
-  //while(g_bsend)
-  //  ;
+  
   for(;i<len;i++)
   {
      g_u8SendData[g_sendtail] =*(strs+i);
@@ -541,7 +925,7 @@ void NBSendTrans(uint8_t* strs,int len)
   }
   g_u8SendData[g_sendtail]=0;
   g_sendtail = (g_sendtail == (RXBUFSIZE-1)) ? 0 : (g_sendtail+1);
-   UART_ENABLE_INT(UART1, ( UART_INTEN_THREIEN_Msk));
+  UART_ENABLE_INT(UART1, ( UART_INTEN_THREIEN_Msk));
 }
 
 
@@ -580,8 +964,16 @@ void DCSendTransByte(uint8_t bytes[],int len)
 
 volatile uint16_t g_totalmsgid=0;
 
-void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
+int32_t NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
 {
+  
+  NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
+  uint8_t* str=MY_GetNBReplyWithOK();
+  if(str==NULL) return FALSE;
+  uint32_t thisport;
+  sscanf(str,"%u",&thisport);
+  free(str);
+    str=NULL;
   SendCMD* cmd=(SendCMD*)malloc(sizeof(SendCMD));
  /* if(phead==NULL)
   {
@@ -604,7 +996,8 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
     //uint8_t* transdata=(uint8_t*)malloc(sizeof(uint8_t)*(2+2+1+g_seriallen+2+datalen));
     uint16_t transdatalen=2+2+1+g_seriallen+2+datalen;
     char transdata[100]={0};
-    sprintf(transdata,"AT+NSOST=0,119.23.12.86,8081,%d,",transdatalen);
+    sprintf(transdata,"AT+NSOST=%u,119.23.12.86,8081,%d,",thisport,transdatalen);
+    
     uint16_t totallen=strlen(transdata)+transdatalen*2+2;
     char tmpbyte[3]={0};
     sprintf(tmpbyte,"%X",cmd->msgid>>8);
@@ -652,10 +1045,7 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
         strcat(transdata,"0");
       }
       strcat(transdata,tmpbyte);
-    } 
-    
-    
-    
+    }
    
      sprintf(tmpbyte,"%X",datalen>>8);
     if(strlen(tmpbyte)==1)
@@ -673,8 +1063,130 @@ void NBSendCmd(uint16_t cmdid,uint8_t data[],uint16_t datalen)
    
     strcat(transdata,(char*)data);
     strcat(transdata,"\r\n");
-    NBSendTrans((uint8_t*)transdata,totallen);
-    free(cmd);
+    while(TRUE)
+    {
+      NBSendTrans((uint8_t*)transdata,totallen);
+      CLK_SysTickDelay(50000);
+      str=MY_GetNBReplyWithOK();
+      free(str);
+      str=NULL;
+      //CLK_SysTickDelay(1500000);
+      str=MY_GetNBReplyNoOK();
+      if(str==NULL)
+      {
+      }
+      else
+      if (*str=='+'&&*(str+1)=='N'&&*(str+2)=='S'&&*(str+3)=='O'&&*(str+4)=='N'&&*(str+5)=='M'&&*(str+6)=='I'&&*(str+7)==':')  //+NSONMI:0,40
+      {
+          char s[7]={0};
+          
+          sscanf(str,"+NSONMI:%s",s);
+          
+          char word[100]="AT+NSORF=";
+          char *end="\r\n";
+          strcat(word,s);
+          strcat(word,end);
+          int ci=strlen(s);
+          NBSendTrans((uint8_t*)word,11+ci);
+          free(str);
+          str=NULL;
+          str=MY_GetNBReplyWithOK();
+          if(cmd->cmdid==CMDID_QUERYMODE)
+          {
+            uint32_t sock_no,sock_port,datalen,remainlen;
+            uint32_t ipaddr1;
+            uint32_t ipaddr2;
+            uint32_t ipaddr3;
+            uint32_t ipaddr4;
+            uint8_t data[13]={0};
+            int _len=sscanf(str,"%u,%u.%u.%u.%u,%u,%u,%12s,%u\r\n",&sock_no,&ipaddr1,&ipaddr2,&ipaddr3,&ipaddr4,&sock_port,&datalen,data,&remainlen);
+          
+            uint32_t _msgid;
+            uint32_t _cmdid;
+            uint32_t _modeid;
+            uint32_t _intervalid;
+            sscanf(data,"%4x%4x%4x%4x",&_msgid,&_cmdid,&_modeid,&_intervalid);
+            //printf("%x",_msgid);
+            g_workmode=_modeid;
+              
+            free(str);
+            str=NULL;
+            
+            if(cmd->msgid==_msgid)
+               break;
+          }
+          else
+          {
+            uint32_t sock_no,sock_port,datalen,remainlen;
+            uint32_t ipaddr1;
+            uint32_t ipaddr2;
+            uint32_t ipaddr3;
+            uint32_t ipaddr4;
+            uint8_t data[9]={0};
+            int _len=sscanf(str,"%u,%u.%u.%u.%u,%u,%u,%8s,%u\r\n",&sock_no,&ipaddr1,&ipaddr2,&ipaddr3,&ipaddr4,&sock_port,&datalen,data,&remainlen);
+          
+            uint32_t _msgid;
+            uint32_t _cmdid;
+            sscanf(data,"%4x%4x",&_msgid,&_cmdid);
+            //printf("%x",_msgid);
+              
+            free(str);
+            str=NULL;
+            
+            if(cmd->msgid==_msgid)
+              break;
+          }
+      }
+    }
+    
+    sprintf(transdata,"AT+NSOCL=%u\r\n",thisport);
+    NBSendTrans((uint8_t*)transdata,strlen(transdata));
+    str=MY_GetNBReplyNoOK();
+    free(str);
+    str=NULL;
+          
+          free(cmd);
+          cmd=NULL;
+    return TRUE;
+}
+
+
+void Enter_PowerDown()
+{
+    /* Unlock protected registers */
+    SYS_UnlockReg();
+
+    /* Enable UART wake up interrupt */
+    UART_EnableInt(UART0, UART_INTEN_WKUPIEN_Msk);
+    UART_EnableInt(UART1, UART_INTEN_WKUPIEN_Msk);
+    /* Enable UART Data Wake up function */
+    UART0->WKUPEN |= UART_WKUPEN_WKDATEN_Msk;
+    UART1->WKUPEN |= UART_WKUPEN_WKDATEN_Msk;
+
+    NVIC_EnableIRQ(UART0_IRQn);
+    NVIC_EnableIRQ(UART1_IRQn);
+
+    /* Enable system wake up interrupt */
+    //CLK->PWRCTL |= CLK_PWRCTL_WAKEINT_EN;
+    //NVIC_EnableIRQ(PDWU_IRQn);
+    
+    TIMER_Open(TIMER0, TIMER_ONESHOT_MODE, 1); /* Initial Timer0 to periodic mode with 1Hz */
+    TIMER_SET_PRESCALE_VALUE(TIMER0,255);
+    TIMER_SET_CMP_VALUE(TIMER0, 125*60*60*2);
+              
+    TIMER_EnableWakeup(TIMER0); /* Enable timer wake up system */
+    TIMER_EnableInt(TIMER0);    /* Enable Timer0 interrupt */
+    NVIC_EnableIRQ(TMR0_IRQn);  /* Enable Timer0 IRQ */
+
+    TIMER_Start(TIMER0); /* Start Timer0 counting */
+
+    //SYS_UnlockReg(); /* Unlock protected registers */
+              
+    g_wakeuptimeout=TRUE;
+                
+
+    /* Enter Power Down mode */
+    CLK_PowerDown();
 }
 
 
@@ -708,159 +1220,146 @@ void UART_FunctionTest()
     NVIC_EnableIRQ(UART0_IRQn);
     
     
-    //quit sleep
-    PC0=0;
-    DCSendTransByte(g_u8Uart0SendDataNoReport,24);
+    //quit sleep地磁模块退出睡眠
+    GMS_DisableSleep();//PC0=0;
+    DCSendTransByte(g_u8Uart0SendDataNoReport,24);//关闭报告周期
     
     
     UART_ENABLE_INT(UART1, (UART_INTEN_RDAIEN_Msk | UART_INTEN_RXTOIEN_Msk));
     
-    NBSendTrans("AT+CGATT?\r\n",11);
+    //NBSendTrans("AT+CGATT?\r\n",11);
     NVIC_EnableIRQ(UART1_IRQn);
     //NBTransImmedite("AT+NBAND?\r\n",11);
     uint32_t cnt=0;
-    while(g_step<1)
-    {
-      PA14 = 0;
-      CLK_SysTickDelay(50000);
-      PA14 = 1;
-      CLK_SysTickDelay(50000);
-      cnt++;
-      if(cnt>30)
-      {
-         NBSendTrans("AT+CGATT?\r\n",11);
-         cnt=0;
-      }
-    }
+    
+    MY_CHECKCGATT();
     cnt=0;
+    MY_GETCIMI();
     
     //enter sleep
-    //PC0=1;
+    GMS_EnableSleep();//PC0=1;//地磁模块进入睡眠
     
-    while(g_step<3)
-    {
-      
-      PA14 = 0;
-      CLK_SysTickDelay(2000000);
-      if(g_transed)
-      {
-          NBSendTrans("AT+NSOCR=DGRAM,17,5684,1\r\n",26);
-          g_transed=FALSE;
-      }
-      PA14 = 1;
-      CLK_SysTickDelay(2000000);
-    }
-   
-    while(g_step!=g_finishstep)//wait for longin end
-    {
-      CLK_SysTickDelay(2000000);
-    }
+    NBSendCmd(CMDID_LOGIN,g_loginarg,0);
     
-    uint8_t stadata[3]={0};
+    g_step=g_finishstep;
+    
+    uint32_t sleepcnt=0;
+    uint32_t retry=0;
+    CLK_SysTickDelay(1000*1000*20);//等待20S，GSM初始化完成
     
     while(g_bWait)
     {
-          PA14 = 0;
-          
-               uint32_t len;
-                if(g_u32com0Rhead<g_u32com0Rtail)
-                  len=g_u32com0Rtail-g_u32com0Rhead;
-                else
-                  len=RXBUFSIZE-g_u32com0Rhead+g_u32com0Rtail;
-           if(len>3)
+         MY_LEDOFF();//PA14 = 0;
+         if(g_workmode==0)
+         {
+             MY_CHECKCGATT();
+             
+             if(pgmsackhead==NULL)
               {
+                sleepcnt++;
+              }
+              else
+              {
+                GmsAck* thisack=pgmsackhead;
+                pgmsackhead=pgmsackhead->next;
+                NBSendCmd(CMDID_REPORTCARPARKING,thisack->stadata,1);
+                free(thisack);
+                thisack=NULL;
+                if(thisack->stadata[1]=='0')
+                  NBSendCmd(CMDID_QUERYMODE,g_loginarg,0);
                 
-                
-                while(g_u8Uart0RecData[g_u32com0Rhead]!=0xaa) 
+              }
+              if(g_workmode==0)
+              {
+                if(retry>3)
                 {
-                  g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                  //if(g_u32com0Rhead>=g_u32com0Rtail) break;
-                  if(g_u32com0Rhead<g_u32com0Rtail)
-                    len=g_u32com0Rtail-g_u32com0Rhead;
-                  else
-                    len=RXBUFSIZE-g_u32com0Rhead+g_u32com0Rtail;
-                  if(len==0) break;
+                  NBSendCmd(CMDID_STATESYNC,g_loginarg,0);
+                  Enter_PowerDown();
+                  sleepcnt=0;
+                  retry=0;
                 }
-                if(len>0)
+                else if(sleepcnt>20)
                 {
+                  GMS_DisableSleep();
+                  CLK_SysTickDelay(100*1000*1);
+                  DCSendTransByte(g_u8Uart0SendDataReset,5);
+                  GMS_EnableSleep();
+                  retry++;
+                  sleepcnt=0;
                   
-               
-                      //if(len<3) continue;
-                      //uint16_t tmp;
-                      //uint32_t idx=0;
-                      
-                      g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                      uint8_t cmdlen=g_u8Uart0RecData[g_u32com0Rhead];
-                      g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                      uint8_t cmd=g_u8Uart0RecData[g_u32com0Rhead];
-                      if(cmd==0x03)
-                      {
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
-                           /*if(sta==0x00)
-                           {
-                             //NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,303030\r\n",39);
-                             stadata[0]=0;
-                             NBSendCmd(1,&stadata);
-                           }
-                            else if(sta==0x01)
-                           {
-                             //NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,313131\r\n",39);
-                             stadata
-                             NBSendCmd(1,{1});
-                           }
-                           else
-                           {
-                             NBSendTrans("AT+NSOST=0,119.23.12.86,8081,3,323232\r\n",39);
-                             NBSendCmd(1,{sta});
-                           }*/
-                           sprintf(stadata,"%x",sta);
-                           if(strlen(stadata)==1)
-                           {
-                             stadata[1]=stadata[0];
-                             stadata[0]='0';
-                           }
-                           NBSendCmd(CMDID_REPORTCARPARKING,stadata,1);
-                           
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           //g_uart0que=TRUE;
-                      }
-                      else if(cmd==0x00)
-                      {
-                           g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                           uint8_t sta=g_u8Uart0RecData[g_u32com0Rhead];
-                           if(sta==0x00)
-                           {
-                             PC0=1;
-                           }
-                      }
-                      else
-                      {
-                        uint8_t i=0;
-                        for(;i<cmdlen;i++)
-                        {
-                          g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                        }
-                        g_u32com0Rhead = (g_u32com0Rhead == (RXBUFSIZE-1)) ? 0 : (g_u32com0Rhead+1);
-                      }
                 }
+                else
+                {
+                  CLK_SysTickDelay(1000*1000*1);
+                }
+                  
+              }
+              else
+              {
+                  CLK_SysTickDelay(1000*1000*1);
+              }
+         }
+         if(g_workmode==1)
+         {
+             MY_CHECKCGATT();
+             NBSendCmd(CMDID_QUERYMODE,g_loginarg,0);
+             if(g_workmode==1)
+             {
+                NBSendCmd(CMDID_STATESYNC,g_loginarg,0);
+                Enter_PowerDown();
+             }
+             
+         }
+         else if(g_workmode==2)//正常工作模式
+         {
+              
+              if(pgmsackhead==NULL)
+              {
+                sleepcnt++;
+              }
+              else
+              {
+                GmsAck* thisack=pgmsackhead;
+                pgmsackhead=pgmsackhead->next;
+                NBSendCmd(CMDID_REPORTCARPARKING,thisack->stadata,1);
+                free(thisack);
+                thisack=NULL;
+                sleepcnt=0;
               }
            
-               //ClearReplyedCmd();//清除过期的任务。
-             
-              //else
-              //{
+              if(sleepcnt<90)
+              {
+                //CLK_SysTickDelay(500000);
+                //MY_LEDON();
+                //CLK_SysTickDelay(500000);
+                CLK_SysTickDelay(1000000);
+              }
+              else
+              {
+               
+                NBSendCmd(CMDID_STATESYNC,g_loginarg,0);
+                Enter_PowerDown();
+                
+                if(g_wakeuptimeout)
+                {
+                  GMS_DisableSleep();
+                  TIMER_ClearWakeupFlag(TIMER0); /* Clear wakeup interrupt flag */
+                  TIMER_ClearIntFlag(TIMER0); /* Clear time-out interrupt flag */
+                  TIMER_Close(TIMER0);
+                }
+                else
+                {
+                    NBSendCmd(CMDID_QUERYMODE,g_loginarg,0);
+                }
+                //NBSendCmd(CMDID_LOGIN,g_loginarg,0);
+                
+                DCSendTransByte(g_u8Uart0SendDataque,4);
+                sleepcnt=0;
                 CLK_SysTickDelay(500000);
-              //}
-                PA14 = 1;
-                CLK_SysTickDelay(500000);
+                GMS_EnableSleep();   
+              }
+         }
+                
     } // wait user press '0' to exit test
 
     /* Disable Interrupt */
@@ -872,6 +1371,8 @@ void UART_FunctionTest()
     printf("\nUART Sample Demo End.\n");
 
 }
+
+
 /*
 void ClearReplyedCmd()
 {
